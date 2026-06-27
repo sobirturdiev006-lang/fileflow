@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}FileFlow — Bosh sahifa{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>Faylni yuklash</h1>
+    <p class="muted">Excel yoki PDF faylni tanlang, amalni belgilang va yuboring.</p>
+
+    <form id="upload-form" class="upload-form">
+        <div class="form-row">
+            <label for="job_type">Amal turi</label>
+            <select id="job_type" name="job_type" required>
+                <option value="excel_clean">Excel tozalash / deduplikatsiya</option>
+                <option value="excel_to_pdf">Excel → PDF hisobot</option>
+                <option value="pdf_table_extract">PDF jadval → Excel</option>
+            </select>
+        </div>
+
+        <div class="form-row" id="dedup-row">
+            <label for="dedup_columns">Dedup ustunlari (vergul bilan, ixtiyoriy)</label>
+            <input type="text" id="dedup_columns" placeholder="masalan: ism, telefon">
+        </div>
+
+        <div class="form-row">
+            <label for="input_file">Fayl</label>
+            <input type="file" id="input_file" name="input_file" required>
+            <small class="muted">Maksimal hajm: 20MB</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn">Yuborish</button>
+        <span id="form-error" class="error-text"></span>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel__header">
+        <h2>Mening joblarim</h2>
+        <button id="refresh-btn" class="btn btn-ghost">⟳ Yangilash</button>
+    </div>
+
+    <table class="jobs-table">
+        <thead>
+            <tr>
+                <th>Amal</th>
+                <th>Holat</th>
+                <th>Yaratilgan</th>
+                <th>Natija</th>
+            </tr>
+        </thead>
+        <tbody id="jobs-tbody">
+            <tr><td colspan="4" class="muted">Hozircha job yo'q. Yuqorida fayl yuklang.</td></tr>
+        </tbody>
+    </table>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.FILEFLOW_API_BASE = "{% url 'job-list' %}";
+</script>
+{% endblock %}

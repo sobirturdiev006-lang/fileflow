@@ -1,0 +1,29 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FileFlow{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <header class="topbar">
+        <div class="container topbar__inner">
+            <a href="{% url 'files:home' %}" class="logo">📁 FileFlow</a>
+            <span class="tagline">Excel & PDF qayta ishlash xizmati</span>
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">FileFlow — MVP</div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+    <script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>
