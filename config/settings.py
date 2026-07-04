@@ -11,7 +11,7 @@ def env_bool(key, default=False):
 
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-only-insecure-key')
-DEBUG = env_bool('DEBUG', True)
+DEBUG = env_bool('DEBUG', False)
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
@@ -24,12 +24,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
-    'celery',
-    'redis',
-    'pdfplumber',
-    'openpyxl',
-    'reportlab',
-    # '',
 
     'files',
 ]
