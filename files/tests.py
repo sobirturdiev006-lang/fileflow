@@ -86,3 +86,4 @@ class ProcessingJobModelTests(TestCase):
         )
         self.assertIn("excel_to_pdf", str(job))
         self.assertIn("pending", str(job))
+        
