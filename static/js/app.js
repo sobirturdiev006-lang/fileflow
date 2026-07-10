@@ -36,6 +36,8 @@
             excel_clean: "Excel tozalash",
             excel_to_pdf: "Excel → PDF",
             pdf_table_extract: "PDF → Excel",
+            docx_to_pdf: "Word → PDF",
+            pdf_text_extract: "PDF → Word",
         };
         return map[type] || type;
     }

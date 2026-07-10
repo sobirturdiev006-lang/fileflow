@@ -21,6 +21,8 @@ class ProcessingJob(models.Model):
         EXCEL_CLEAN = "excel_clean", "Excel tozalash/deduplikatsiya"
         EXCEL_TO_PDF = "excel_to_pdf", "Excel -> PDF hisobot"
         PDF_TABLE_EXTRACT = "pdf_table_extract", "PDF jadval -> Excel"
+        DOCX_TO_PDF = "docx_to_pdf", "Word -> PDF"
+        PDF_TEXT_EXTRACT = "pdf_text_extract", "PDF matn -> Word"
 
     class Status(models.TextChoices):
         PENDING = "pending", "Kutilmoqda"

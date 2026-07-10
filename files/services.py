@@ -9,6 +9,7 @@ import uuid
 
 import pandas as pd
 import pdfplumber
+from docx import Document
 from openpyxl import Workbook
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -105,8 +106,81 @@ def process_pdf_table_extract(job):
     return _relative_to_media(out_path)
 
 
+def process_docx_to_pdf(job):
+    """
+    Word (.docx) hujjatni o'qiydi va oddiy PDF hisobotga aylantiradi.
+    Faqat paragraf matnlarini va jadval hujayralarini ko'chiradi -- murakkab
+    formatlash (rasm, ustunlar, stil) saqlanmaydi, faqat matn mazmuni ko'chadi.
+    """
+    from xml.sax.saxutils import escape
+
+    document = Document(job.input_file.path)
+
+    out_path = _output_path(job.id, "converted.pdf")
+    doc = SimpleDocTemplate(out_path, pagesize=A4)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    for para in document.paragraphs:
+        text = para.text.strip()
+        if text:
+            elements.append(Paragraph(escape(text), styles["Normal"]))
+            elements.append(Spacer(1, 8))
+
+    for table in document.tables:
+        data = [[cell.text for cell in row.cells] for row in table.rows]
+        if not data:
+            continue
+        pdf_table = Table(data, repeatRows=1)
+        pdf_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2d3748")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ]))
+        elements.append(pdf_table)
+        elements.append(Spacer(1, 12))
+
+    if not elements:
+        elements.append(Paragraph("(Hujjat bo'sh)", styles["Normal"]))
+
+    doc.build(elements)
+    return _relative_to_media(out_path)
+
+
+def process_pdf_text_extract(job):
+    """
+    PDF ichidagi barcha sahifalar matnini ketma-ket o'qib, Word (.docx)
+    hujjatga yozadi. Jadval izlamaydi (buning uchun process_pdf_table_extract
+    bor) -- bu funksiya "oddiy" matnli PDF'lar uchun.
+    """
+    out_path = _output_path(job.id, "extracted_text.docx")
+    document = Document()
+
+    found_any_text = False
+    with pdfplumber.open(job.input_file.path) as pdf:
+        for page_num, page in enumerate(pdf.pages, start=1):
+            text = page.extract_text() or ""
+            text = text.strip()
+            if not text:
+                continue
+            found_any_text = True
+            document.add_heading(f"{page_num}-sahifa", level=2)
+            for line in text.split("\n"):
+                if line.strip():
+                    document.add_paragraph(line.strip())
+
+    if not found_any_text:
+        document.add_paragraph("PDF ichida matn topilmadi.")
+
+    document.save(out_path)
+    return _relative_to_media(out_path)
+
+
 PROCESSORS = {
     "excel_clean": process_excel_clean,
     "excel_to_pdf": process_excel_to_pdf,
     "pdf_table_extract": process_pdf_table_extract,
+    "docx_to_pdf": process_docx_to_pdf,
+    "pdf_text_extract": process_pdf_text_extract,
 }
