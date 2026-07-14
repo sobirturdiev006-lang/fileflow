@@ -16,6 +16,8 @@ COPY . .
 
 RUN mkdir -p /app/media
 
+RUN python manage.py collectstatic --noinput
+
 RUN chmod +x entrypoint.sh
 
 EXPOSE 8000
