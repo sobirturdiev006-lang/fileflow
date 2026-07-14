@@ -9,9 +9,10 @@ Test qatlamlari:
   - ProcessJobTaskTests            -> tasks.process_job (Celery, eager mode)
   - ProcessingJobAPITests          -> views.ProcessingJobViewSet (DRF API)
 
-Eslatma: fayllar BytesIO orqali xotirada yaratiladi (diskka vaqtinchalik fayl
-yozilmaydi), shuning uchun Windows'dagi "fayl ikkita joyda ochiq" muammosi
-umuman yuzaga kelmaydi va tearDown'da hech narsa tozalash shart emas.
+Eslatma: services.py R2 (masofaviy storage) bilan ishlaydigan qilib
+qayta yozilgan -- process_* funksiyalar endi natija yo'lini qaytarmaydi,
+buning o'rniga job.result_file maydoniga Storage API orqali to'g'ridan-to'g'ri
+yozadi. Shuning uchun testlarda natijani job.result_file orqali tekshiramiz.
 """
 
 import io
@@ -124,8 +125,8 @@ class ProcessExcelCleanTests(_MediaIsolatedTestCase):
             job_type=ProcessingJob.JobType.EXCEL_CLEAN, input_file=upload,
         )
 
-        result_relpath = process_excel_clean(job)
-        result_df = pd.read_excel(f"{self.media_root}/{result_relpath}")
+        process_excel_clean(job)
+        result_df = pd.read_excel(job.result_file.path)
 
         self.assertEqual(len(result_df), 2)
         self.assertListEqual(list(result_df["name"]), ["A", "B"])
@@ -139,8 +140,8 @@ class ProcessExcelCleanTests(_MediaIsolatedTestCase):
             job_type=ProcessingJob.JobType.EXCEL_CLEAN, input_file=upload,
         )
 
-        result_relpath = process_excel_clean(job)
-        result_df = pd.read_excel(f"{self.media_root}/{result_relpath}")
+        process_excel_clean(job)
+        result_df = pd.read_excel(job.result_file.path)
 
         self.assertEqual(len(result_df), 2)
 
@@ -155,8 +156,8 @@ class ProcessExcelCleanTests(_MediaIsolatedTestCase):
             options={"dedup_columns": ["name"]},
         )
 
-        result_relpath = process_excel_clean(job)
-        result_df = pd.read_excel(f"{self.media_root}/{result_relpath}")
+        process_excel_clean(job)
+        result_df = pd.read_excel(job.result_file.path)
 
         self.assertEqual(len(result_df), 2)
         self.assertListEqual(sorted(result_df["name"]), ["A", "B"])
@@ -168,8 +169,8 @@ class ProcessExcelCleanTests(_MediaIsolatedTestCase):
             job_type=ProcessingJob.JobType.EXCEL_CLEAN, input_file=upload,
         )
 
-        result_relpath = process_excel_clean(job)
-        result_df = pd.read_excel(f"{self.media_root}/{result_relpath}")
+        process_excel_clean(job)
+        result_df = pd.read_excel(job.result_file.path)
 
         self.assertEqual(len(result_df), 0)
 
@@ -202,11 +203,10 @@ class ProcessExcelToPdfTests(_MediaIsolatedTestCase):
             job_type=ProcessingJob.JobType.EXCEL_TO_PDF, input_file=upload,
         )
 
-        result_relpath = process_excel_to_pdf(job)
+        process_excel_to_pdf(job)
 
-        self.assertTrue(result_relpath.endswith(".pdf"))
-        full_path = f"{self.media_root}/{result_relpath}"
-        with open(full_path, "rb") as f:
+        self.assertTrue(job.result_file.name.endswith(".pdf"))
+        with job.result_file.open("rb") as f:
             header = f.read(5)
         self.assertEqual(header, b"%PDF-")
 
@@ -218,9 +218,8 @@ class ProcessExcelToPdfTests(_MediaIsolatedTestCase):
             job_type=ProcessingJob.JobType.EXCEL_TO_PDF, input_file=upload,
         )
 
-        result_relpath = process_excel_to_pdf(job)
-        full_path = f"{self.media_root}/{result_relpath}"
-        with open(full_path, "rb") as f:
+        process_excel_to_pdf(job)
+        with job.result_file.open("rb") as f:
             header = f.read(5)
         self.assertEqual(header, b"%PDF-")
 
@@ -234,11 +233,10 @@ class ProcessPdfTableExtractTests(_MediaIsolatedTestCase):
             job_type=ProcessingJob.JobType.PDF_TABLE_EXTRACT, input_file=upload,
         )
 
-        result_relpath = process_pdf_table_extract(job)
-        full_path = f"{self.media_root}/{result_relpath}"
+        process_pdf_table_extract(job)
 
         from openpyxl import load_workbook
-        wb = load_workbook(full_path)
+        wb = load_workbook(job.result_file.path)
         self.assertGreaterEqual(len(wb.sheetnames), 1)
         self.assertNotIn("empty", wb.sheetnames)
 
@@ -248,11 +246,10 @@ class ProcessPdfTableExtractTests(_MediaIsolatedTestCase):
             job_type=ProcessingJob.JobType.PDF_TABLE_EXTRACT, input_file=upload,
         )
 
-        result_relpath = process_pdf_table_extract(job)
-        full_path = f"{self.media_root}/{result_relpath}"
+        process_pdf_table_extract(job)
 
         from openpyxl import load_workbook
-        wb = load_workbook(full_path)
+        wb = load_workbook(job.result_file.path)
         self.assertIn("empty", wb.sheetnames)
 
 

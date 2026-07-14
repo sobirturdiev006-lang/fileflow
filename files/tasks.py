@@ -27,8 +27,11 @@ def process_job(self, job_id):
         return
 
     try:
-        relative_result_path = processor(job)
-        job.result_file.name = relative_result_path
+        # processor(job) natija faylini o'zi job.result_file'ga yuklab
+        # qo'yadi (Storage API orqali -- R2'ga yoki lokal media/ga,
+        # sozlamaga qarab). Shuning uchun bu yerda faqat statusni
+        # yangilab, bitta marta saqlaymiz.
+        processor(job)
         job.status = ProcessingJob.Status.DONE
         job.save(update_fields=["status", "result_file", "updated_at"])
     except Exception as exc:

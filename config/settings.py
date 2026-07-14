@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'storages',  # Cloudflare R2 (S3-compatible) storage uchun -- pastda USE_S3 orqali yoqiladi
 
     'files',
 ]
@@ -110,6 +111,51 @@ STORAGES = {
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# --- Fayllarni saqlash: Cloudflare R2 (S3-compatible) ---
+# NEGA KERAK: Railway konteynerining diski "ephemeral" -- har safar qayta
+# deploy yoki restart bo'lganda undagi barcha fayllar butunlay o'chib
+# ketadi. Shuning uchun productionda foydalanuvchi yuklagan va tayyor
+# bo'lgan fayllar mahalliy diskka emas, tashqi R2 bucket'ga saqlanishi
+# SHART -- aks holda "Not Found" xatosi qaytadi yoki fayllar restart'dan
+# keyin yo'qoladi.
+#
+# USE_S3=True bo'lganda quyidagi environment variable'lar MAJBURIY
+# (Railway loyihasida Variables bo'limiga qo'shiladi):
+#   USE_S3=True
+#   R2_ACCESS_KEY_ID=...
+#   R2_SECRET_ACCESS_KEY=...
+#   R2_BUCKET_NAME=...
+#   R2_ENDPOINT_URL=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+#
+# Lokalda (o'z komputeringda) USE_S3 berilmasa -- oddiy holatdagidek,
+# fayllar mahalliy `media/` papkasiga yoziladi, hech narsa buzilmaydi.
+USE_S3 = env_bool('USE_S3', False)
+
+if USE_S3:
+    STORAGES['default'] = {
+        'BACKEND': 'storages.backends.s3.S3Storage',
+    }
+
+    AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.getenv('R2_BUCKET_NAME')
+    AWS_S3_ENDPOINT_URL = os.getenv('R2_ENDPOINT_URL')
+
+    # R2 hozircha "ochiq (public) bucket"ni to'liq qo'llab-quvvatlamaydi,
+    # shuning uchun har bir fayl havolasi vaqtinchalik "signed URL"
+    # ko'rinishida beriladi (pastdagi AWS_QUERYSTRING_EXPIRE muddatigacha
+    # ishlaydi, keyin havola eskiradi -- lekin fayl o'chmaydi, faqat
+    # yangi havola olish uchun API'ga qayta murojaat qilinadi).
+    AWS_S3_SIGNATURE_VERSION = 's3v4'  # R2 faqat shu versiyani qo'llab-quvvatlaydi
+    AWS_S3_ADDRESSING_STYLE = 'path'
+    AWS_DEFAULT_ACL = None  # R2 ACL tushunchasini qo'llamaydi
+    AWS_QUERYSTRING_AUTH = True
+    AWS_QUERYSTRING_EXPIRE = 3600  # signed URL 1 soat amal qiladi
+
+    # Bir xil nomli fayl qayta yuklansa, eskisini bosib yozmasdan,
+    # nomiga tasodifiy belgi qo'shib saqlaydi.
+    AWS_S3_FILE_OVERWRITE = False
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
